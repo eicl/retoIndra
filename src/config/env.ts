@@ -1,6 +1,5 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
+'use strict';
+require('dotenv').config();
 
 function getEnvVariable(key: string, required = true): string {
   const value = process.env[key];

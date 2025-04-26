@@ -1,0 +1,180 @@
+service: medical-appointment
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: dev
+  region: us-east-1
+  environment:
+     DYNAMODB_TABLE: ${env:DYNAMODB_TABLE}
+     SNS_TOPIC_PE: ${env:SNS_TOPIC_PE}
+     SNS_TOPIC_CL: ${env:SNS_TOPIC_CL}
+     SQS_URL_PE: ${env:SQS_URL_PE}
+     SQS_URL_CL: ${env:SQS_URL_CL}
+     RDS_HOST: ${env:RDS_HOST}
+     RDS_PORT: ${env:RDS_PORT}
+     RDS_USER: ${env:RDS_USER}
+     RDS_PASSWORD: ${env:RDS_PASSWORD}
+     RDS_DATABASE: ${env:RDS_DATABASE}
+
+functions:
+  appointment:
+    handler: src/lambdas/appointment.handler
+    events:
+      - http:
+          path: appointment
+          method: post
+      - http:
+          path: appointment/{insuredId}
+          method: get
+
+  appointmentPE:
+    handler: src/lambdas/appointmentPE.appointmentPE
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - SQSPE
+              - Arn
+          batchSize: 5
+
+  appointmentCL:
+    handler: src/lambdas/appointmentCL.appointmentCL
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [SQSCL, Arn]
+          batchSize: 5
+
+  confirmAppointment:
+    handler: src/lambdas/confirmAppointment.confirmAppointment
+    events:
+      - eventBridge:
+          pattern:
+            source:
+              - "aws.sns"
+              - "aws.sqs"
+
+resources:
+  Resources:
+    AppointmentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${env:DYNAMODB_TABLE}
+        AttributeDefinitions:
+          - AttributeName: insuredId
+            AttributeType: S
+          - AttributeName: scheduleId
+            AttributeType: N
+        KeySchema:
+          - AttributeName: insuredId
+            KeyType: HASH
+          - AttributeName: scheduleId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+    SQSPE:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: appointmentQueuePE
+        Policy:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action: "SQS:SendMessage"
+              Resource: "*"
+              Condition:
+                ArnEquals:
+                  aws:SourceArn:
+                    Ref: SNSPE
+
+    SQSCL:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: appointmentQueueCL
+        Policy:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action: "SQS:SendMessage"
+              Resource: "*"
+              Condition:
+                ArnEquals:
+                  aws:SourceArn:
+                    Ref: SNSCL
+
+    SNSPE:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: SNSPE
+
+    SNSCL:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: SNSCL
+
+    #  SUSCRIPCIONES SNS -> SQS
+    SubscriptionPE:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        TopicArn:
+          Ref: SNSPE
+        Endpoint:
+          Fn::GetAtt:
+            - SQSPE
+            - Arn
+
+    SubscriptionCL:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        TopicArn:
+          Ref: SNSCL
+        Endpoint:
+          Fn::GetAtt:
+            - SQSCL
+            - Arn
+
+    AppointmentConfirmationQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: SQS-Confirmaciones
+
+    AgendamientoEventBridgeRule:
+      Type: AWS::Events::Rule
+      Properties:
+        Name: AgendamientoEventBridgeRule
+        EventPattern:
+          source:
+            - "aws.sns"
+          detail-type:
+            - "SNS Topic Notification"
+        Targets:
+          - Arn: arn:aws:sqs:us-east-1:969510159188:SQSPE
+            Id: "SQSPE-Target"
+
+    EventBridgeRule:
+      Type: AWS::Events::Rule
+      Properties:
+        Name: AppointmentConfirmedRule
+        EventPattern:
+          source:
+            - "appointment.system"
+          detail-type:
+            - "AppointmentConfirmed"
+        Targets:
+          - Arn:
+              Fn::GetAtt:
+                - AppointmentConfirmationQueue
+                - Arn
+            Id: "SendToSQS"
+
+    PermissionForEventsToSendToSQS:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: !Ref appointment
+        Action: lambda:InvokeFunction
+        Principal: events.amazonaws.com
