@@ -1,0 +1,23 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Archivos de compilación
+dist/
+build/
+
+# Variables de entorno
+.env
+
+# Configuración de IDEs
+.idea/
+.vscode/
+
+# Serverless deployment
+.serverless/
+
+# Archivos de configuración de AWS Lambda
+serverless.yml
