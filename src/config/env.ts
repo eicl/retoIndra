@@ -16,6 +16,8 @@ export const Env = {
   SNS_ARN_CL: getEnvVariable('SNS_ARN_CL'),
   SQS_ARN_PE: getEnvVariable('SQS_ARN_PE'),
   SQS_ARN_CL: getEnvVariable('SQS_ARN_CL'),
+  SQS_URL_PE: getEnvVariable('SQS_URLPE'),
+  SQS_URL_CL: getEnvVariable('SQS_URLCL'),
   RDS_HOST: getEnvVariable('RDS_HOST'),
   RDS_PORT: parseInt(getEnvVariable('RDS_PORT')),
   RDS_USER: getEnvVariable('RDS_USER'),

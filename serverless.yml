@@ -12,11 +12,13 @@ provider:
     MYSQL_USER: ${env:RDS_USER}
     MYSQL_PASSWORD: ${env:RDS_PASSWORD}
     MYSQL_DATABASE: ${env:RDS_DATABASE}
-    DYNAMO_TABLE: appointments
+    DYNAMODB_TABLE: ${env:DYNAMODB_TABLE}
     SNS_ARN_PE: ${env:SNS_ARN_PE}
     SNS_ARN_CL: ${env:SNS_ARN_CL}
     SQS_ARN_PE: ${env:SQS_ARN_PE}
     SQS_ARN_CL: ${env:SQS_ARN_CL}
+    SQS_URLPE: ${env:SQS_URLPE}
+    SQS_URLCL: ${env:SQS_URLCL}
 
   iamRoleStatements:
     - Effect: Allow
@@ -26,14 +28,25 @@ provider:
     - Effect: Allow
       Action:
         - sns:Publish
+        - sns:CreateTopic
+        - sns:Subscribe
+        - sns:ListSubscriptions
+        - sns:ListSubscriptionsByTopic
       Resource: "*"
     - Effect: Allow
       Action:
-        - sqs:*
-      Resource: "*"
+        - sqs:SendMessage
+      Resource:
+        - !GetAtt SQSPE.Arn
+        - !GetAtt SQSCL.Arn
     - Effect: Allow
       Action:
         - events:PutEvents
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - rds:DescribeDBInstances
+        - rds:Connect
       Resource: "*"
 
 functions:
@@ -110,17 +123,16 @@ resources:
     SNSSubscriptionPE:
       Type: AWS::SNS::Subscription
       Properties:
-        TopicArn: ${env:SNS_ARN_PE}
+        TopicArn: !Ref SNSPE  # Utilizando la referencia del topic SNS
         Protocol: sqs
-        Endpoint: ${env:SQS_URL_PE}
+        Endpoint: !GetAtt SQSPE.Arn  # Usamos el ARN de la cola SQS directamente
 
     SNSSubscriptionCL:
       Type: AWS::SNS::Subscription
       Properties:
-        TopicArn: ${env:SNS_ARN_CL}
+        TopicArn: !Ref SNSCL  # Utilizando la referencia del topic SNS
         Protocol: sqs
-        Endpoint: ${env:SQS_URL_CL}
+        Endpoint: !GetAtt SQSCL.Arn  # Usamos el ARN de la cola SQS directamente
 
 plugins:
   - serverless-offline
-
