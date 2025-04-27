@@ -13,8 +13,10 @@ provider:
     MYSQL_PASSWORD: ${env:RDS_PASSWORD}
     MYSQL_DATABASE: ${env:RDS_DATABASE}
     DYNAMO_TABLE: appointments
-    SNS_TOPIC_PE: { "Ref": "SNSPE" }
-    SNS_TOPIC_CL: { "Ref": "SNSCL" }
+    SNS_ARN_PE: ${env:SNS_ARN_PE}
+    SNS_ARN_CL: ${env:SNS_ARN_CL}
+    SQS_ARN_PE: ${env:SQS_ARN_PE}
+    SQS_ARN_CL: ${env:SQS_ARN_CL}
 
   iamRoleStatements:
     - Effect: Allow
@@ -83,22 +85,22 @@ resources:
     SNSPE:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: SNS_PE
+        TopicName: SNSPE
 
     SNSCL:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: SNS_CL
+        TopicName: SNSCL
 
     SQSPE:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: SQS_PE
+        QueueName: SQSPE
 
     SQSCL:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: SQS_CL
+        QueueName: SQSCL
 
     ConfirmationsQueue:
       Type: AWS::SQS::Queue
@@ -108,16 +110,16 @@ resources:
     SNSSubscriptionPE:
       Type: AWS::SNS::Subscription
       Properties:
-        TopicArn: !Ref SNSPE
+        TopicArn: ${env:SNS_ARN_PE}
         Protocol: sqs
-        Endpoint: !GetAtt SQSPE.Arn
+        Endpoint: ${env:SQS_URL_PE}
 
     SNSSubscriptionCL:
       Type: AWS::SNS::Subscription
       Properties:
-        TopicArn: !Ref SNSCL
+        TopicArn: ${env:SNS_ARN_CL}
         Protocol: sqs
-        Endpoint: !GetAtt SQSCL.Arn
+        Endpoint: ${env:SQS_URL_CL}
 
 plugins:
   - serverless-offline

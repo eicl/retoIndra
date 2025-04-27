@@ -1,6 +1,6 @@
 import { SNS } from 'aws-sdk';
 import { Appointment } from '../../domain/models/Appointment';
-require('dotenv').config();
+import { Env } from '../../config/env';
 
 
 export class SNSService {
@@ -26,21 +26,18 @@ export class SNSService {
   }
  
   async getTopicArnByCountry(countryISO: string):Promise<string | null> {
-    const key:string = 'SNS_TOPIC_PE';
     let topicMap: string | null = '';
      switch (countryISO ){
       case 'PE':
-        topicMap = 'arn:aws:sns:us-east-1:969510159188:SNS_PE' ;
-        console.log( "topic_peru","" + process.env[key])
+        topicMap = '' + Env.SNS_ARN_PE ;
         break;
       case 'CL':
-        topicMap = '' +  process.env["SNS_TOPIC_CL"];
+        topicMap = '' + Env.SNS_ARN_CL;
         break;
       default :
         topicMap = null;
         break;
      }
-    console.log('topic', topicMap)
     return topicMap;
   }
 }
