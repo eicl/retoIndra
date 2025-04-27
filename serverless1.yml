@@ -153,7 +153,7 @@ resources:
           detail-type:
             - "SNS Topic Notification"
         Targets:
-          - Arn: arn:aws:sqs:us-east-1:969510159188:SQSPE
+          - Arn: arn:aws:sqs:us-east-1:969510159188:SQS_PE
             Id: "SQSPE-Target"
 
     EventBridgeRule:

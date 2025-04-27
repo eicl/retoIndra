@@ -1,6 +1,7 @@
 import { SNS } from 'aws-sdk';
 import { Appointment } from '../../domain/models/Appointment';
-import { Env } from '../../config/env';
+require('dotenv').config();
+
 
 export class SNSService {
   private sns: SNS;
@@ -10,8 +11,7 @@ export class SNSService {
   }
 
   async send(appointment: Appointment): Promise<void> {
-    const topicArn = this.getTopicArnByCountry(appointment.countryISO);
-
+    const topicArn = await this.getTopicArnByCountry(appointment.countryISO);
     if (!topicArn) {
       console.warn(`No SNS Topic ARN found for country: ${appointment.countryISO}`);
       return;
@@ -24,13 +24,23 @@ export class SNSService {
 
     await this.sns.publish(params).promise();
   }
-
-  private getTopicArnByCountry(countryISO: string): string | null {
-    const topicMap: Record<string, string> = {
-      PE: Env.SNS_TOPIC_PE || '',
-      CL: Env.SNS_TOPIC_CL || '',
-    };
-
-    return topicMap[countryISO] || null;
+ 
+  async getTopicArnByCountry(countryISO: string):Promise<string | null> {
+    const key:string = 'SNS_TOPIC_PE';
+    let topicMap: string | null = '';
+     switch (countryISO ){
+      case 'PE':
+        topicMap = 'arn:aws:sns:us-east-1:969510159188:SNS_PE' ;
+        console.log( "topic_peru","" + process.env[key])
+        break;
+      case 'CL':
+        topicMap = '' +  process.env["SNS_TOPIC_CL"];
+        break;
+      default :
+        topicMap = null;
+        break;
+     }
+    console.log('topic', topicMap)
+    return topicMap;
   }
 }
