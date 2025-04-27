@@ -1,0 +1,124 @@
+service: medical-appointment
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: dev
+  environment:
+    MYSQL_HOST: ${env:RDS_HOST}
+    MYSQL_USER: ${env:RDS_USER}
+    MYSQL_PASSWORD: ${env:RDS_PASSWORD}
+    MYSQL_DATABASE: ${env:RDS_DATABASE}
+    DYNAMO_TABLE: appointments
+    SNS_TOPIC_PE: { "Ref": "SNSPE" }
+    SNS_TOPIC_CL: { "Ref": "SNSCL" }
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - sqs:*
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - events:PutEvents
+      Resource: "*"
+
+functions:
+  appointment:
+    handler: src/lambdas/appointment.handler
+    events:
+      - http:
+          path: appointments
+          method: post
+      - http:
+          path: appointments/{insuredId}
+          method: get
+      - sqs:
+          arn:
+            Fn::GetAtt: [ConfirmationsQueue, Arn]
+          batchSize: 5
+
+  appointmentPE:
+    handler: src/lambdas/appointmentPE.appointmentPE
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [SQSPE, Arn]
+          batchSize: 5
+
+  appointmentCL:
+    handler: src/lambdas/appointmentCL.appointmentCL
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [SQSCL, Arn]
+          batchSize: 5
+
+resources:
+  Resources:
+
+    AppointmentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: appointments
+        AttributeDefinitions:
+          - AttributeName: insuredId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: insuredId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    SNSPE:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: SNS_PE
+
+    SNSCL:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: SNS_CL
+
+    SQSPE:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: SQS_PE
+
+    SQSCL:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: SQS_CL
+
+    ConfirmationsQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: appointment_confirmations
+
+    SNSSubscriptionPE:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: !Ref SNSPE
+        Protocol: sqs
+        Endpoint: !GetAtt SQSPE.Arn
+
+    SNSSubscriptionCL:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: !Ref SNSCL
+        Protocol: sqs
+        Endpoint: !GetAtt SQSCL.Arn
+
+plugins:
+  - serverless-offline
+
