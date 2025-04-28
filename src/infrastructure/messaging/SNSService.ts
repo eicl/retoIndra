@@ -21,6 +21,7 @@ export class SNSService {
       Message: JSON.stringify(appointment),
       TopicArn: topicArn,
     };
+    console.log({params});
 
     await this.sns.publish(params).promise();
   }

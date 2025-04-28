@@ -14,8 +14,10 @@ const appointmentService = new AppointmentService(
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    console.log({event});
     // Obtener el cuerpo de la solicitud
-    const requestBody = JSON.parse(event.body || '{}');
+    let requestBody = JSON.parse(event.body || '{}');
+    if (requestBody == '{}' ) requestBody = event ;
     const { insuredId, scheduleId, countryISO } = requestBody;
 
     // Crear la cita
@@ -26,6 +28,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       status: 'pending',
       // Otros atributos según el modelo Appointment
     };
+
+    console.log({appointment});
 
     // Guardar la cita en DynamoDB
     await appointmentService.createAppointment(appointment);
