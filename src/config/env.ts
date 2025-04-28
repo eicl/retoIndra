@@ -23,4 +23,5 @@ export const Env = {
   RDS_USER: getEnvVariable('RDS_USER'),
   RDS_PASSWORD: getEnvVariable('RDS_PASSWORD'),
   RDS_DATABASE: getEnvVariable('RDS_DATABASE'),
+  EVENT_BUS_NAME: getEnvVariable('EVENT_BUS_NAME'),
 };

@@ -8,14 +8,15 @@ export class EventBridgeService {
     const params = {
       Entries: [
         {
-          Source: 'appointment.system',
-          DetailType: 'AppointmentConfirmed',
+          Source: 'appointment',
+          DetailType: 'appointment-success',
           Detail: JSON.stringify(appointment),
-          EventBusName: 'default', 
+          EventBusName: process.env.EVENT_BUS_NAME, 
         },
       ],
     };
 
     await this.eventBridge.putEvents(params).promise();
+    console.log('Evento enviado a EventBridge para confirmación de agendamiento.');
   }
 }

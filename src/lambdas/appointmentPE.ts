@@ -15,7 +15,7 @@ export const appointmentPE: SQSHandler = async (event: SQSEvent) => {
   // Procesar cada mensaje de la cola SQS
   for (const record of event.Records) {
     const appointmentData: Appointment = JSON.parse(record.body);
-
+    console.log({appointmentData});
     // Si el país es Perú, realizamos el agendamiento
     if (appointmentData.countryISO === 'PE') {
       // Crear y guardar la cita médica
@@ -32,3 +32,4 @@ export const appointmentPE: SQSHandler = async (event: SQSEvent) => {
     }
   }
 };
+

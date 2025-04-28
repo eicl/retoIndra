@@ -19,11 +19,14 @@ provider:
     SQS_ARN_CL: ${env:SQS_ARN_CL}
     SQS_URLPE: ${env:SQS_URLPE}
     SQS_URLCL: ${env:SQS_URLCL}
+    EVENT_BUS_NAME: ${env:EVENT_BUS_NAME}
 
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - dynamodb:*
+        - dynamodb:PutItem
+        - dynamodb:BatchWriteItem
+        - dynamodb:UpdateItem
       Resource: "*"
     - Effect: Allow
       Action:
@@ -71,6 +74,14 @@ functions:
           arn:
             Fn::GetAtt: [SQSPE, Arn]
           batchSize: 5
+      - eventBridge:
+          eventBus: 
+            Ref: AppointmentEventBus
+          pattern:
+            source:
+              - "appointment"
+            detail-type:
+              - "appointment-success"
 
   appointmentCL:
     handler: src/lambdas/appointmentCL.appointmentCL
@@ -79,22 +90,17 @@ functions:
           arn:
             Fn::GetAtt: [SQSCL, Arn]
           batchSize: 5
+      - eventBridge:
+          eventBus: 
+            Ref: AppointmentEventBus
+          pattern:
+            source:
+              - "appointment"
+            detail-type:
+              - "appointment-success"
 
 resources:
   Resources:
-
-    AppointmentsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: appointments
-        AttributeDefinitions:
-          - AttributeName: insuredId
-            AttributeType: S
-        KeySchema:
-          - AttributeName: insuredId
-            KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
-
     SNSPE:
       Type: AWS::SNS::Topic
       Properties:
@@ -115,6 +121,11 @@ resources:
       Properties:
         QueueName: SQSCL
 
+    AppointmentEventBus:
+      Type: AWS::Events::EventBus
+      Properties:
+        Name: AppointmentEventBus
+
     ConfirmationsQueue:
       Type: AWS::SQS::Queue
       Properties:
@@ -123,16 +134,37 @@ resources:
     SNSSubscriptionPE:
       Type: AWS::SNS::Subscription
       Properties:
-        TopicArn: !Ref SNSPE  # Utilizando la referencia del topic SNS
+        TopicArn: !Ref SNSPE
         Protocol: sqs
         Endpoint: !GetAtt SQSPE.Arn  # Usamos el ARN de la cola SQS directamente
+        FilterPolicy:
+          countryISO: ["PE"]
 
     SNSSubscriptionCL:
       Type: AWS::SNS::Subscription
       Properties:
-        TopicArn: !Ref SNSCL  # Utilizando la referencia del topic SNS
+        TopicArn: !Ref SNSCL # Utilizando la referencia del topic SNS
         Protocol: sqs
-        Endpoint: !GetAtt SQSCL.Arn  # Usamos el ARN de la cola SQS directamente
+        Endpoint: !GetAtt SQSCL.Arn # Usamos el ARN de la cola SQS directamente
+        FilterPolicy:
+          countryISO: ["CL"]
+    
+#    AppointmentEventBridgeRule:
+#       Type: AWS::Events::Rule
+#       Properties:
+#         EventBusName:
+#           Ref: AppointmentEventBus
+#         EventPattern:
+#           Source:
+#             - "appointment"
+#           DetailType:
+#             - "appointment-success"
+#         Targets:
+#           - Arn:
+#               Fn::GetAtt: [ConfirmationsQueue, Arn]
+#             Id: "ConfirmationsQueue"
+#             SqsParameters:
+#               MessageGroupId: "appointment-group"
 
 plugins:
   - serverless-offline
