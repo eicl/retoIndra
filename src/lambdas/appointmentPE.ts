@@ -11,6 +11,17 @@ const appointmentService = new AppointmentService(
 );
 const eventBridgeService = new EventBridgeService();
 
+/**
+ * @swagger
+ * /appointments/pe:
+ *   post:
+ *     summary: Procesar citas para PE
+ *     description: Esta función procesa los agendamientos de citas para el país PE.
+ *     operationId: processPEAppointments
+ *     responses:
+ *       200:
+ *         description: Cita procesada correctamente
+ */
 export const appointmentPE: SQSHandler = async (event: SQSEvent) => {
   // Procesar cada mensaje de la cola SQS
   for (const record of event.Records) {

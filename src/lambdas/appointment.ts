@@ -11,7 +11,55 @@ const appointmentService = new AppointmentService(
   new DynamoDBRepository(),   // Repositorio DynamoDB
   snsService                 // Pasar SNSService si es necesario
 );
-
+/**
+ * @swagger
+ * /appointments:
+ *   post:
+ *     summary: Agendar una cita
+ *     description: Agrega una nueva cita a la base de datos.
+ *     operationId: createAppointment
+ *     requestBody:
+ *       description: Información de la cita
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               insuredId:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *                 format: date-time
+ *               doctorId:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum:
+ *                   - pending
+ *                   - completed
+ *     responses:
+ *       200:
+ *         description: Cita creada exitosamente
+ *       400:
+ *         description: Parámetros inválidos
+ * /appointments/{insuredId}:
+ *   get:
+ *     summary: Obtener citas de un asegurado
+ *     description: Recupera las citas agendadas de un asegurado.
+ *     operationId: getAppointments
+ *     parameters:
+ *       - name: insuredId
+ *         in: path
+ *         required: true
+ *         description: ID del asegurado.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de citas
+ *       404:
+ *         description: No se encontraron citas
+ */
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     console.log({event});

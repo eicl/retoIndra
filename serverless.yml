@@ -59,9 +59,53 @@ functions:
       - http:
           path: appointments
           method: post
+          documentation:
+            summary: Agendar una cita
+            description: Agrega una nueva cita a la base de datos.
+            operationId: createAppointment
+            requestBody:
+              description: Información de la cita
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      insuredId:
+                        type: string
+                      date:
+                        type: string
+                        format: date-time
+                      doctorId:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - pending
+                          - completed
+            responses:
+              200:
+                description: Cita creada exitosamente
+              400:
+                description: Parámetros inválidos
       - http:
           path: appointments/{insuredId}
           method: get
+          documentation:
+            summary: Obtener citas de un asegurado
+            description: Recupera las citas agendadas de un asegurado.
+            operationId: getAppointments
+            parameters:
+              - name: insuredId
+                in: path
+                required: true
+                description: ID del asegurado.
+                schema:
+                  type: string
+            responses:
+              200:
+                description: Lista de citas
+              404:
+                description: No se encontraron citas
       - sqs:
           arn:
             Fn::GetAtt: [ConfirmationsQueue, Arn]
@@ -168,3 +212,21 @@ resources:
 
 plugins:
   - serverless-offline
+  - serverless-openapi-documentation
+  - serverless-aws-documentation
+
+custom:
+  openApiDocumentation:
+    docName: api-docs # Nombre del archivo de documentación
+    version: 1.0.0
+    description: API de agendamiento de citas médicas.
+    servers:
+      - url: https://api.medical-appointment.com/${self:provider.stage}
+        description: API de producción
+
+# Configuración para generar automáticamente la documentación
+swagger:
+  autoHeaders: true
+  autoResponse: true
+  autoSchema: true
+  output: './swagger-output.json'  

@@ -11,6 +11,17 @@ const appointmentService = new AppointmentService(
 );
 const eventBridgeService = new EventBridgeService();
 
+/**
+ * @swagger
+ * /appointments/cl:
+ *   post:
+ *     summary: Procesar citas para CL
+ *     description: Esta función procesa los agendamientos de citas para el país CL.
+ *     operationId: processCLAppointments
+ *     responses:
+ *       200:
+ *         description: Cita procesada correctamente
+ */
 export const appointmentCL: SQSHandler = async (event: SQSEvent) => {
   // Procesar cada mensaje de la cola SQS
   for (const record of event.Records) {
